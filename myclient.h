@@ -6,6 +6,8 @@
 
 class QTextEdit;
 class QLineEdit;
+class QTcpServer;
+
 
 class MYCLIENT: public QWidget{
     Q_OBJECT
@@ -24,6 +26,33 @@ private slots:
     void slotError (QAbstractSocket:: SocketError);
     void slotSendToServer ();
     void slotConnected ();
+
 };
+
+
+
+
+
+
+class MYSERVER: public QWidget{
+    Q_OBJECT
+
+private:
+        QTcpServer* m_ptcpServer;
+        QTextEdit* m_ptxt;
+        quint16 m_nNextBlockSize;
+
+private:
+        void sendToClient(QTcpSocket* pSocket, const QString& str);
+
+public:
+        MYSERVER (int nPort, QWidget* pwgt = 0);
+
+public slots:
+        virtual void slotNewConnection();
+        void slotReadClient();
+};
+
+
 
 #endif // MYCLIENT_H
