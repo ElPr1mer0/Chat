@@ -7,15 +7,27 @@
 #include <QTime>
 #include <QTcpServer>
 #include <QMessageBox>
+#include <QHostInfo>
 
 
 
 MYCLIENT::MYCLIENT(const QString &strHost, int nPort, QWidget *pwgt): QWidget (pwgt), m_nNextBlockSize(0){
    m_pTcpSocket = new QTcpSocket(this);
    m_pTcpSocket->connectToHost(strHost, nPort);
+   //"192.168.56.1";
+   QString localhostname =  QHostInfo::localHostName();
+      QList<QHostAddress> hostList = QHostInfo::fromName(localhostname).addresses();
+      foreach (const QHostAddress& address, hostList) {
+          if (address.protocol() == QAbstractSocket::IPv4Protocol && address.isLoopback() == false) {
+               localhostIP = address.toString();
+          }
+      }
+
+
    connect(m_pTcpSocket, SIGNAL(connected()),this, SLOT(slotConnected()));
    connect(m_pTcpSocket, SIGNAL(readyRead()), this, SLOT(slotReadyRead()));
    connect(m_pTcpSocket, SIGNAL(errorOccurred(QAbstractSocket::SocketError)), this, SLOT(slotError(QAbstractSocket::SocketError)));
+
 
    m_ptxtInfo = new QTextEdit;
    m_ptxtInput = new QLineEdit;
@@ -24,15 +36,26 @@ MYCLIENT::MYCLIENT(const QString &strHost, int nPort, QWidget *pwgt): QWidget (p
 
    QPushButton* pcmd = new QPushButton("&Send");
    connect(pcmd, SIGNAL(clicked()), SLOT(slotSendToServer()));
-   connect(m_ptxtInput, SIGNAL(returnPressed()),
-           this, SLOT(slotSendToServer()));
+   connect(m_ptxtInput, SIGNAL(returnPressed()),this, SLOT(slotSendToServer()));
 
    QVBoxLayout* pvbxLayout = new QVBoxLayout;
    pvbxLayout->addWidget(new QLabel("<H1>Client</H1>"));
    pvbxLayout->addWidget(m_ptxtInfo);
    pvbxLayout->addWidget(m_ptxtInput);
    pvbxLayout->addWidget(pcmd);
+   qDebug()<<QHostInfo::localHostName();
+   QLabel *lab_current_ip = new QLabel("Ваш ip: " + localhostIP);
+   QLabel *lab_friend_ip = new QLabel("Введите ip друга:");
+   ld_friend_ip = new QLineEdit;
+   QPushButton *but_get_ip = new QPushButton("Подтвердить ввод ip друга");
+   pvbxLayout->addWidget(lab_current_ip);
+   pvbxLayout->addWidget(lab_friend_ip);
+   pvbxLayout->addWidget(ld_friend_ip);
    setLayout(pvbxLayout);
+
+   connect(but_get_ip,SIGNAL(clicked()),this, SLOT(myConnect()));
+
+
 }
 
 void MYCLIENT::slotReadyRead(){
@@ -90,6 +113,13 @@ void MYCLIENT::slotConnected(){
     m_ptxtInfo->append("Received the connecte() signal");
 }
 
+void MYCLIENT::myConnect(){
+
+    m_pTcpSocket->connectToHost("192.168.0.110", 2324);
+}
+
+
+
 
 void MYSERVER::sendToClient(QTcpSocket *pSocket, const QString &str){
     QByteArray  arrBlock;
@@ -105,18 +135,12 @@ void MYSERVER::sendToClient(QTcpSocket *pSocket, const QString &str){
 MYSERVER::MYSERVER(int nPort, QWidget *pwgt): QWidget(pwgt), m_nNextBlockSize (0){
     m_ptcpServer = new QTcpServer(this);
     if(!m_ptcpServer->listen(QHostAddress::Any, nPort)){
-        QMessageBox::critical(0,
-                               "Server Error",
-                               "Unable to start the server:"
-                               + m_ptcpServer->errorString()
-                               );
+        QMessageBox::critical(0,"Server Error", "Unable to start the server:" + m_ptcpServer->errorString());
         m_ptcpServer->close();
         return;
     }
 
-    connect(m_ptcpServer, SIGNAL(newConnection()),
-            this, SLOT(slotNewConnection())
-            );
+    connect(m_ptcpServer, SIGNAL(newConnection()),this, SLOT(slotNewConnection()));
 
     m_ptxt = new QTextEdit;
     m_ptxt->setReadOnly(true);
@@ -130,12 +154,8 @@ MYSERVER::MYSERVER(int nPort, QWidget *pwgt): QWidget(pwgt), m_nNextBlockSize (0
 
 void MYSERVER::slotNewConnection(){
     QTcpSocket* pClientSocket = m_ptcpServer->nextPendingConnection();
-    connect(pClientSocket, SIGNAL(disconnected()),
-            pClientSocket, SLOT(deleteLater())
-            );
-    connect(pClientSocket, SIGNAL(readyRead()),
-            this, SLOT(slotReadClient())
-            );
+    connect(pClientSocket, SIGNAL(disconnected()), pClientSocket, SLOT(deleteLater()));
+    connect(pClientSocket, SIGNAL(readyRead()), this, SLOT(slotReadClient()));
 
     sendToClient(pClientSocket, "Server Response: Connected!");
 }

@@ -1,14 +1,11 @@
 #include <QApplication>
 #include <QtWidgets>
 #include "myclient.h"
+#include <QHostInfo>
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]){
     QApplication app(argc, argv);
-
-
-
-    MYCLIENT client("localhost", 2324);
+    MYCLIENT client("32", 2324);
     client.show();
     MYSERVER server(2324);
     server.show();

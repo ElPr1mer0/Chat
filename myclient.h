@@ -12,11 +12,19 @@ class QTcpServer;
 class MYCLIENT: public QWidget{
     Q_OBJECT
 
+public:
+    QString localhostIP;
 private:
     QTcpSocket* m_pTcpSocket;
     QTextEdit* m_ptxtInfo;
     QLineEdit* m_ptxtInput;
+    QLineEdit *ld_friend_ip;
+
+
+
     quint16 m_nNextBlockSize;
+    QString friend_ip;
+    int friend_port;
 
 public:
     MYCLIENT(const QString& strHost, int nPort, QWidget* pwgt = 0);
@@ -26,6 +34,8 @@ private slots:
     void slotError (QAbstractSocket:: SocketError);
     void slotSendToServer ();
     void slotConnected ();
+
+    void myConnect();
 
 };
 
